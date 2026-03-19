@@ -1,0 +1,129 @@
+---
+description: Adopt an existing codebase into the interface-designer workflow
+---
+
+# Interface Designer — Adopt Project
+
+**Arguments:** `$ARGUMENTS`
+
+**Format:** `{project-name}`
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `project-name` | Yes | Name of the existing project (must exist at `design/{project-name}/`) |
+
+**Example:**
+```
+/interface-designer:adopt my-app
+```
+
+## Step 1: Verify & Explore
+
+1. Verify `design/{project-name}/` exists — error if not found
+2. Read `package.json` to understand the tech stack (dependencies, scripts, dev server command)
+3. Read key source files (`src/App.tsx` or equivalent, router config if present) to understand the project structure
+4. Read any existing documentation (`README.md`, `DOCUMENTATION.md`, `PROJECT_STATEMENT.md`) for context
+
+## Step 2: Initialize Git & Changelog
+
+1. Check if a git repo already exists (`git rev-parse --git-dir`)
+2. If no git repo: `git init` in the project directory
+3. Create `CHANGELOG.md` (or preserve existing one) with an adoption entry:
+   ```markdown
+   # {Project Name} — Design Changelog
+
+   ## Adopted — {date}
+   - Adopted existing codebase into interface-designer workflow
+   - Tech stack: {summary from package.json}
+   - Ready for iterative design prompts
+   ```
+4. Stage all files and make initial commit: `feat: adopt {project-name} into interface-designer workflow`
+
+## Step 3: Configure Remote Tracking
+
+1. Check if `.claude/test-sites.json` exists in the workspace root (the directory where the user ran Claude Code, NOT inside the design project).
+
+2. **If the file exists and has an entry for this project with a `designRepo` field:** add it as the `origin` remote:
+   ```bash
+   cd design/{project-name} && git remote add origin {designRepo}
+   ```
+   Tell the user: "Found remote tracking config — pushes will go to {designRepo}."
+
+3. **If the file exists but has no entry for this project, OR the file doesn't exist:** ask the user:
+   > "Do you want to track this project against a remote git repo? (e.g., for sharing the mock with your team)"
+
+   - **If yes:** ask for the git URL, create/merge `.claude/test-sites.json` entry, add remote
+   - **If no:** skip — local-only mode
+
+## Step 4: Install & Start
+
+1. Check for `node_modules/` — if missing, run the appropriate install command (`pnpm install`, `npm install`, or `yarn` based on lockfile present)
+2. Determine the dev server command from `package.json` scripts (usually `dev` or `start`)
+3. Start the dev server in background
+4. Wait for Vite/webpack to be ready
+
+## Step 5: Verify Chrome DevTools
+
+1. Check if `.mcp.json` exists in the workspace root.
+2. If it exists, check if it has a `chrome-devtools` entry in `mcpServers`.
+3. If `.mcp.json` doesn't exist OR doesn't have a `chrome-devtools` entry:
+   - Ask the user: "Chrome DevTools MCP is not configured. Visual verification requires it. Do you want me to add it to .mcp.json?"
+   - **If yes:** merge in the chrome-devtools entry and tell the user to restart for it to take effect.
+   - **If no:** warn that screenshots won't work, but continue.
+
+## Step 6: Open in Browser
+
+1. Use Chrome DevTools to navigate to the dev server URL
+2. Take a screenshot to confirm the app is running
+3. Show the screenshot to the user
+
+## Step 7: Ready for Prompts
+
+Report to the user:
+- Project adopted successfully
+- Tech stack summary
+- Screenshot of current state
+- Ready for design prompts
+
+**After adoption, `/interface-designer:resume` and `/interface-designer:revert` work normally** since the project now has git history and a CHANGELOG.md.
+
+---
+
+## Prompt Cycle (after setup)
+
+When the user gives a prompt describing what to build or change:
+
+1. **Plan** the changes needed (briefly, 2-3 sentences max)
+2. **Implement** the changes following the interface-designer agent patterns:
+   - Types in `src/types/`
+   - Schemas in `src/schemas/`
+   - Mock data in `src/services/`
+   - Pages in `src/pages/`
+   - Components in `src/components/`
+   - Routes in `src/router/router.tsx`
+3. **Verify:**
+   - Run `pnpm build` to check for errors
+   - Take a Chrome DevTools screenshot of the result
+   - Check for console errors
+4. **Log** the prompt and changes in `CHANGELOG.md`
+5. **Commit** with a descriptive message
+6. **Push** to remote if configured
+7. **Show** the user the screenshot and a brief summary of what was built
+
+If the build fails, fix the errors before showing anything to the user. If a visual issue is spotted in the screenshot, fix it and re-screenshot.
+
+## Port Management
+
+- Default Vite port: 5173
+- If a project is already running on 5173, Vite will auto-increment to 5174, etc.
+- Check the terminal output for the actual port and use that for Chrome DevTools navigation
+
+## Important
+
+- Use the **interface-designer** agent patterns for all code decisions
+- **Always use mock data** — generate realistic sample data in `src/services/` for every entity
+- **Never install packages** unless the user explicitly asks
+- **Always commit** after each prompt cycle
+- **Always push** after each commit if a remote is configured
+- **Always update CHANGELOG.md** — this is the user's conversation history
+- **Always screenshot** after changes — visual verification is mandatory
