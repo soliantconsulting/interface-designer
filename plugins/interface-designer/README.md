@@ -39,6 +39,7 @@ Restart your Claude Code session to apply the changes.
 |---------|-------------|
 | `/interface-designer:new {name}` | Scaffold a new React+MUI project in `design/{name}/` |
 | `/interface-designer:adopt {name}` | Adopt an existing codebase at `design/{name}/` into the workflow |
+| `/interface-designer:mockify {source-path} {name}` | Clone a real production React app from `{source-path}`, copy it to `design/{name}/`, stub auth, and wire up MSW for mock data |
 | `/interface-designer:resume {name}` | Resume an existing project — loads changelog, starts dev server |
 | `/interface-designer:revert {name}` | Show git history and revert to a previous commit |
 

@@ -8,7 +8,7 @@
     {
       "name": "interface-designer",
       "description": "Interactive React UI designer — scaffold, build, and iterate on MUI applications with Chrome DevTools visual verification",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": {
         "name": "Soliant Consulting",
         "email": "cna@soliantconsulting.com"
