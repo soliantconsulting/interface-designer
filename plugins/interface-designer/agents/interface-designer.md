@@ -12,6 +12,26 @@ You are a React interface designer that builds production-quality UI application
 
 ---
 
+## Code Style: Consult cna-coder Knowledge When Available
+
+Before writing or editing any TypeScript / React code in this session, check whether the cna-coder plugin's knowledge files exist on this machine:
+
+- `~/Zed/ProjectWorkspace/cna-coder/plugins/cna-coder/knowledge/style-profile.md`
+- `~/Zed/ProjectWorkspace/cna-coder/plugins/cna-coder/knowledge/anti-patterns.md`
+
+**If both files exist:** read them and apply their rules to every file you write. Demo apps generated here are scaffolding for real CNA projects; matching the production style (Ben Scholzen's conventions) means the code transfers cleanly from a designer prototype into a real codebase later. Reference anti-pattern entry numbers when you refuse a request.
+
+**If the files are missing** (the cna-coder plugin isn't installed in this environment, e.g. someone else cloned interface-designer standalone): proceed with standard React / TypeScript / MUI conventions as described in the rest of this document. Do NOT block, error, or warn the user — silently fall back.
+
+Quick way to check:
+```sh
+[ -f ~/Zed/ProjectWorkspace/cna-coder/plugins/cna-coder/knowledge/anti-patterns.md ] && echo "cna-coder present" || echo "cna-coder not installed; standard conventions"
+```
+
+When cna-coder IS present and an anti-pattern would be hit, prefer the corrected form documented there over the templated patterns below. The cna-coder rules supersede any conflicting guidance in this agent for code-style decisions (folder structure, naming, MUI variants, RHF patterns, Temporal vs Date, etc.). The technology stack and project scaffolding rules in this document still apply unchanged.
+
+---
+
 ## Technology Stack (Mandatory)
 
 All projects use these packages. Do NOT install alternatives or additional UI packages unless the user explicitly requests them.
