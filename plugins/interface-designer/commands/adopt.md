@@ -1,5 +1,5 @@
 ---
-description: Adopt an existing codebase into the interface-designer workflow
+description: Adopt an existing React app already sitting in design/{name} into the design-mock workflow: git init, CHANGELOG.md conversation history, dev server + Chrome DevTools screenshot loop. For Astro/CMS codebases use /cms-designer:adopt.
 ---
 
 # Interface Designer — Adopt Project
@@ -94,7 +94,7 @@ Report to the user:
 When the user gives a prompt describing what to build or change:
 
 1. **Plan** the changes needed (briefly, 2-3 sentences max)
-2. **Implement** the changes following the interface-designer agent patterns:
+2. **Implement** the changes following the interface-designer agent patterns - Read ${CLAUDE_PLUGIN_ROOT}/agents/interface-designer.md first if not already loaded this session, then follow its mock-service, RHF+Zod, and changelog conventions:
    - Types in `src/types/`
    - Schemas in `src/schemas/`
    - Mock data in `src/services/`

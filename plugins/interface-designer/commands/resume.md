@@ -1,5 +1,5 @@
 ---
-description: Resume work on an existing interface-designer project
+description: Resume a React design mock in design/{name} - reloads CHANGELOG.md history, restarts the Vite dev server, pulls remote, screenshots current state. Use when continuing UI design iteration on a mock built with /interface-designer:new, :adopt, or :mockify.
 ---
 
 # Interface Designer — Resume Project
@@ -46,7 +46,7 @@ Show the user:
 When the user gives a prompt describing what to build or change:
 
 1. **Plan** the changes needed (briefly, 2-3 sentences max)
-2. **Implement** the changes following the interface-designer agent patterns:
+2. **Implement** the changes following the interface-designer agent patterns - Read ${CLAUDE_PLUGIN_ROOT}/agents/interface-designer.md first if not already loaded this session, then follow its mock-service, RHF+Zod, and changelog conventions:
    - Types in `src/types/`
    - Schemas in `src/schemas/`
    - Mock data in `src/services/`

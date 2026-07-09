@@ -1,5 +1,5 @@
 ---
-description: Scaffold a new React UI project — Vite + MUI + TanStack Router + mock data
+description: Scaffold a new React DESIGN MOCK under design/{name} - Vite + MUI + TanStack Router, in-memory mock data, no backend, git-tracked with screenshot verification. Use for UI prototypes and design iteration; for a real provisioned CNA project use /cna-project-init:new.
 ---
 
 # Interface Designer — New Project
@@ -139,7 +139,7 @@ Tell the user the project is running and ready. They can now describe what they 
 When the user gives a prompt describing what to build or change:
 
 1. **Plan** the changes needed (briefly, 2-3 sentences max)
-2. **Implement** the changes following the interface-designer agent patterns:
+2. **Implement** the changes following the interface-designer agent patterns - Read ${CLAUDE_PLUGIN_ROOT}/agents/interface-designer.md first if not already loaded this session, then follow its mock-service, RHF+Zod, and changelog conventions:
    - Types in `src/types/`
    - Schemas in `src/schemas/`
    - Mock data in `src/services/`

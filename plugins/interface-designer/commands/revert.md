@@ -1,5 +1,5 @@
 ---
-description: Show commit history and revert to a previous state
+description: Show commit history for a React design mock in design/{name} and revert it to a previous prompt cycle. Use for interface-designer projects; Astro/CMS sites use /cms-designer:revert.
 ---
 
 # Interface Designer — Revert Project
