@@ -42,6 +42,31 @@ Restart your Claude Code session to apply the changes.
 | `/interface-designer:mockify {source-path} {name}` | Clone a real production React app from `{source-path}`, copy it to `design/{name}/`, stub auth, and wire up MSW for mock data |
 | `/interface-designer:resume {name}` | Resume an existing project — loads changelog, starts dev server |
 | `/interface-designer:revert {name}` | Show git history and revert to a previous commit |
+| `/interface-designer:genai-demo {name}` | Build a Rapid GenAI Assessment pitch demo: replicate a client's FileMaker or Salesforce UI from screenshots, then overlay suggested AWS AI implementations as a guided tour |
+
+## GenAI pitch demos
+
+`genai-demo` exists for one job: walking into an existing client and showing them
+where Generative AI would help, using their own screens rather than a generic mockup.
+
+It builds two layers:
+
+1. **A replica of the client's current system**, from screenshots. Fidelity outranks
+   polish here — the normal MUI house style is deliberately suspended, because the
+   client has to recognise the software as theirs on sight.
+2. **A demo overlay** that spotlights elements in that replica and attaches a suggested
+   AWS AI implementation to each, sourced from the client's real pain points.
+
+The AI content lives in a single file, `src/ai/aiOpportunities.ts`, so the AWS team can
+rewrite the entire pitch without touching a screen. Every opportunity carries a
+mandatory `evidence` field citing a ticket, meeting or document.
+
+Supporting assets:
+
+| Path | Purpose |
+|------|---------|
+| `templates/genai-skin/` | FileMaker and Salesforce skins: palette, density, and chrome components (`FMWindow`, `FMHeader`, `FMGrid`, `FMField`, `FMTabs`, `FMPortal`) |
+| `templates/genai-tour/` | The AI opportunity overlay: provider, spotlight overlay, launcher, and the editable opportunities file |
 
 ## How It Works
 

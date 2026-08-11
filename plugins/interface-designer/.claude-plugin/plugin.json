@@ -1,7 +1,7 @@
 {
   "name": "interface-designer",
-  "description": "Interactive React UI designer — scaffold, build, and iterate on MUI applications with Chrome DevTools visual verification",
-  "version": "1.3.1",
+  "description": "Interactive React UI designer — scaffold, build, and iterate on MUI applications with Chrome DevTools visual verification, plus GenAI pitch demos that replicate a client's FileMaker or Salesforce interface",
+  "version": "1.4.0",
   "author": {
     "name": "Soliant Consulting",
     "email": "cna@soliantconsulting.com"
