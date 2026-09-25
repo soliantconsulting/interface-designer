@@ -75,8 +75,9 @@ Follow `/interface-designer:new` Steps 1 through 5 with these changes:
 
 - Project folder: `design/{project-name}`
 - **Do not** copy `templates/scaffold/src/theme/theme.ts`. Use the skin from Step 3 instead.
-- **Do not** copy `templates/scaffold/src/pages/Dashboard.tsx`.
-- Also create: `mkdir -p src/{ai,components/fm,pages,services,types}`
+- **Do not** copy `templates/scaffold/src/routes/index.tsx`; the first replica screen becomes `src/routes/index.tsx`.
+- Copy `templates/scaffold/src/routes/__root.tsx` but reduce its component to a bare `<Outlet />`. The window chrome comes from the skin, not the MUI AppBar.
+- Also create: `mkdir -p src/{ai,components/fm,routes,services,types}`
 
 ## Step 3: Install the skin
 
@@ -92,7 +93,7 @@ For `--source salesforce`, use `theme/salesforceTheme.ts` and the `components/sf
 
 ## Step 4: Build the screens
 
-One route per screenshot. Build them in the order the user would navigate them, starting with whatever screen acts as the menu or home.
+One route file per screenshot under `src/routes/` (`index.tsx` for the home or menu screen, `orders.tsx` for `/orders`, and so on). Build them in the order the user would navigate them, starting with whatever screen acts as the menu or home.
 
 Rules:
 
@@ -143,13 +144,13 @@ Order them so the first two are the most obviously valuable. The pitch often doe
 
 Copy `${CLAUDE_PLUGIN_ROOT}/templates/genai-tour/src/ai/` into `src/ai/`, keeping the `aiOpportunities.ts` you just wrote.
 
-Mount in `App.tsx`:
+Mount in `src/main.tsx`, around the existing `RouterProvider`. The overlay sits outside the router, so it navigates through the router instance rather than a hook:
 
 ```tsx
 <AIProvider>
-  <RouterProvider router={router} />
-  <AILauncher />
-  <AIOverlay />
+    <RouterProvider router={router} />
+    <AILauncher />
+    <AIOverlay navigate={(to) => void router.navigate({ href: to })} />
 </AIProvider>
 ```
 

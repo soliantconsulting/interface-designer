@@ -21,7 +21,7 @@ description: Scaffold a new React DESIGN MOCK under design/{name} - Vite + MUI +
 
 1. Create the project using Vite:
    ```bash
-   cd design/ && pnpm create vite {project-name} --template react-ts
+   cd design/ && pnpm create vite {project-name} --template react-ts --no-interactive
    ```
    If the `design/` directory doesn't exist, create it first: `mkdir -p design/`
 
@@ -35,7 +35,8 @@ description: Scaffold a new React DESIGN MOCK under design/{name} - Vite + MUI +
      react-hook-form @hookform/resolvers zod \
      mui-rhf-integration \
      material-react-table \
-     lucide-react uuid dayjs
+     lucide-react uuid dayjs temporal-polyfill \
+   && pnpm add -D @tanstack/router-plugin
    ```
 
 ## Step 2: Apply Project Template
@@ -43,24 +44,35 @@ description: Scaffold a new React DESIGN MOCK under design/{name} - Vite + MUI +
 Replace the Vite boilerplate files with the CNA template files from `${CLAUDE_PLUGIN_ROOT}/templates/scaffold/`:
 
 1. Copy these files from the template, **overwriting** the Vite defaults:
+   - `index.html` — loads `/src/entry.ts`, not `main.tsx`
+   - `vite.config.ts` — router plugin plus the `optimizeDeps.include` list; never add an `optimizeDeps.exclude`
+   - `src/entry.ts`
+   - `src/temporal-polyfill.ts`
+   - `src/schemas/zod-config.ts`
    - `src/main.tsx`
-   - `src/App.tsx` — replace `{{PROJECT_NAME}}` in this file with the actual project name (title-cased from the folder name, e.g., `scheduling-portal` becomes `Scheduling Portal`)
    - `src/index.css`
    - `src/theme/theme.ts`
-   - `src/router/router.tsx`
-   - `src/pages/Dashboard.tsx`
+   - `src/routes/__root.tsx`
+   - `src/routes/index.tsx`
    - `src/types/index.ts`
-   - `vite.config.ts`
+
+   Then replace `{{PROJECT_NAME}}` in `index.html` and `src/routes/__root.tsx` with the actual project name (title-cased from the folder name, e.g., `scheduling-portal` becomes `Scheduling Portal`).
 
 2. Create empty directory placeholders:
    ```bash
-   mkdir -p design/{project-name}/src/{schemas,services,components,hooks}
+   mkdir -p design/{project-name}/src/{services,components,hooks}
    ```
 
-3. Delete Vite boilerplate files that are no longer needed:
+3. Delete the Vite boilerplate the template replaces (`public/favicon.svg` stays; `index.html` links it):
    ```bash
-   rm -f design/{project-name}/src/App.css design/{project-name}/src/assets/react.svg design/{project-name}/public/vite.svg
+   rm -rf design/{project-name}/src/App.tsx design/{project-name}/src/App.css design/{project-name}/src/assets design/{project-name}/public/icons.svg
    ```
+
+4. Generate the route tree once, so `tsc` can see it before the dev server has ever run:
+   ```bash
+   cd design/{project-name} && pnpm exec vite build
+   ```
+   The router plugin writes `src/routeTree.gen.ts` during the build and rewrites it whenever a route file changes. Commit it; never edit it by hand. The `dist/` output is disposable.
 
 ## Step 3: Initialize Git & Changelog
 
@@ -143,9 +155,8 @@ When the user gives a prompt describing what to build or change:
    - Types in `src/types/`
    - Schemas in `src/schemas/`
    - Mock data in `src/services/`
-   - Pages in `src/pages/`
-   - Components in `src/components/`
-   - Routes in `src/router/router.tsx`
+   - Routes in `src/routes/` (file-based: one file per screen, route-private pieces in a sibling `-components/` folder; the router plugin regenerates `src/routeTree.gen.ts`)
+   - Shared components in `src/components/`
 3. **Verify:**
    - Run `pnpm build` to check for errors
    - Take a Chrome DevTools screenshot of the result
