@@ -1,6 +1,7 @@
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import { erd } from "./erd/vite-plugin-erd.js";
 
 /**
  * Every package the scaffold installs is pre-bundled at server start. Left to discovery, Vite
@@ -16,6 +17,7 @@ export default defineConfig({
             routeFileIgnorePrefix: "-",
         }),
         react(),
+        erd(),
     ],
     optimizeDeps: {
         include: [

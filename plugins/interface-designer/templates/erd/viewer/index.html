@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ERD · <!--erd:title--></title>
+        <!--erd:style-->
+    </head>
+    <body>
+        <header class="topbar">
+            <div class="brand">
+                <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="2" y="3" width="8" height="7" rx="1.5" />
+                    <rect x="14" y="14" width="8" height="7" rx="1.5" />
+                    <path d="M10 6.5h3a2 2 0 0 1 2 2V14" />
+                </svg>
+                <div>
+                    <div class="brand-title" id="title"></div>
+                    <div class="brand-subtitle">Entity relationship diagram</div>
+                </div>
+            </div>
+            <div class="stats" id="stats"></div>
+            <div class="status" id="status" data-state="static">
+                <span class="status-dot"></span><span id="status-label">Snapshot</span>
+            </div>
+            <div class="toolbar">
+                <label class="toggle"><input type="checkbox" id="keys-only" /> Keys only</label>
+                <label class="toggle"><input type="checkbox" id="show-values" /> Embedded types</label>
+                <span class="divider"></span>
+                <button type="button" class="icon" id="zoom-out" title="Zoom out (-)" aria-label="Zoom out">
+                    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10" /></svg>
+                </button>
+                <button type="button" class="zoom-level" id="zoom-level" title="Actual size (0)">100%</button>
+                <button type="button" class="icon" id="zoom-in" title="Zoom in (+)" aria-label="Zoom in">
+                    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M8 3v10" /></svg>
+                </button>
+                <button type="button" id="fit" title="Fit to screen (F)">Fit</button>
+                <span class="divider"></span>
+                <button type="button" id="reset-layout" title="Forget dragged positions and lay the diagram out again">Auto layout</button>
+                <button type="button" id="copy-mermaid" title="Copy the diagram as Mermaid erDiagram source">Copy Mermaid</button>
+                <button type="button" id="download-svg" title="Download the diagram as an SVG image">Download SVG</button>
+            </div>
+        </header>
+        <main class="layout">
+            <aside class="sidebar">
+                <div class="search">
+                    <input type="search" id="search" placeholder="Search entities and fields" autocomplete="off" spellcheck="false" />
+                    <kbd>/</kbd>
+                </div>
+                <section class="panel-section">
+                    <h2>Entities <span class="count" id="entity-count"></span></h2>
+                    <ul class="entity-list" id="entity-list"></ul>
+                </section>
+                <section class="panel-section issues" id="issues" hidden>
+                    <h2>Warnings <span class="count" id="issue-count"></span></h2>
+                    <ul class="issue-list" id="issue-list"></ul>
+                </section>
+                <section class="panel-section legend">
+                    <h2>Legend</h2>
+                    <ul>
+                        <li><span class="badge pk">PK</span> Primary key</li>
+                        <li><span class="badge fk">FK</span> Reference to another entity</li>
+                        <li><span class="badge ext">EXT</span> Id in an outside system</li>
+                        <li>
+                            <svg class="legend-line" viewBox="0 0 48 12" aria-hidden="true"><path class="edge-sample" d="M2 6h44" /></svg>
+                            Reference by id
+                        </li>
+                        <li>
+                            <svg class="legend-line" viewBox="0 0 48 12" aria-hidden="true"><path class="edge-sample embedded" d="M2 6h44" /></svg>
+                            Record nested inside its parent
+                        </li>
+                        <li>
+                            <svg class="legend-line" viewBox="0 0 48 12" aria-hidden="true"><path class="edge-sample" d="M2 6h44M38 1v10M42 1v10" /></svg>
+                            Exactly one
+                        </li>
+                        <li>
+                            <svg class="legend-line" viewBox="0 0 48 12" aria-hidden="true"><path class="edge-sample" d="M2 6h30M38 1v10" /><circle class="marker-circle" cx="34" cy="6" r="3.5" /></svg>
+                            Zero or one
+                        </li>
+                        <li>
+                            <svg class="legend-line" viewBox="0 0 48 12" aria-hidden="true"><path class="edge-sample" d="M2 6h28M34 6l12-5M34 6h12M34 6l12 5" /><circle class="marker-circle" cx="30" cy="6" r="3.5" /></svg>
+                            Zero or many
+                        </li>
+                    </ul>
+                </section>
+                <details class="panel-section help">
+                    <summary>How this diagram is built</summary>
+                    <p>It is generated from the TypeScript types in <code id="sources"></code> and redraws whenever they change.</p>
+                    <p>An entity is an exported type with an <code>id</code> field, or one tagged <code>/** @entity */</code>. Types without an id that sit inside a record are drawn as embedded types.</p>
+                    <p>A field named after an entity (<code>listingId</code>, <code>listingIds</code>) links to it. Anything else takes a tag: <code>/** @ref User */</code>, or <code>/** @external PayPal */</code> for an id that lives outside the mock.</p>
+                </details>
+            </aside>
+            <div class="canvas" id="canvas">
+                <svg id="diagram" class="diagram" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Entity relationship diagram">
+                    <defs>
+                        <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+                            <circle class="grid-dot" cx="1" cy="1" r="1" />
+                        </pattern>
+                    </defs>
+                    <rect id="backdrop" class="backdrop" width="100%" height="100%" fill="url(#grid)" />
+                    <g id="viewport">
+                        <g id="edges"></g>
+                        <g id="nodes"></g>
+                    </g>
+                </svg>
+                <div class="empty" id="empty" hidden>
+                    <h2>No entities yet</h2>
+                    <p>Add an exported type with an <code>id</code> field to the ERD sources and it appears here.</p>
+                </div>
+                <div class="hint">Scroll to pan · Ctrl or ⌘ + scroll to zoom · Drag a box to move it</div>
+            </div>
+            <aside class="details" id="details" hidden></aside>
+        </main>
+        <div class="toast" id="toast" role="status" hidden></div>
+        <dialog class="dialog" id="mermaid-dialog">
+            <form method="dialog">
+                <h2>Mermaid source</h2>
+                <p>Paste into Confluence, GitHub, or any Mermaid renderer.</p>
+                <textarea id="mermaid-text" readonly spellcheck="false"></textarea>
+                <div class="dialog-actions"><button type="submit" value="close">Close</button></div>
+            </form>
+        </dialog>
+        <!--erd:data-->
+        <!--erd:script-->
+    </body>
+</html>

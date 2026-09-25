@@ -218,13 +218,14 @@ Same as `/adopt`:
 
 Same as `/adopt`: check `.mcp.json` for the `chrome-devtools` MCP entry; add it if the user wants.
 
-## Step 12: Start & Open
+## Step 12: Add the ERD, Start & Open
 
-1. Run `pnpm start` (or detected dev command) in the background.
-2. Wait for Vite to be ready.
-3. Navigate Chrome DevTools to the dev server URL.
-4. Take a screenshot.
-5. Check the browser console for unhandled-request warnings — these tell you which URL patterns need MSW handlers next.
+1. Add the live ERD: follow **Installing or refreshing the ERD in an existing mock** in `${CLAUDE_PLUGIN_ROOT}/agents/interface-designer.md`. A production app keeps its resource types in the query layer, so point `include` there (`erd({ include: ["src/queries"] })` for a JSON:API client). The ERD reads resource types such as `ReturnType<typeof deserializeOne>["data"]`, unwraps a type that is the whole document, skips list projections derived from another exported type (`Paginated["data"][number]`), and links relationship fields like `employee` or `primaryContact` by name. Expect a first round of warnings for role-named ids (`bdOwnerId`, `assignedBoxId`); tag the obvious ones and ask the user about the rest.
+2. Run `pnpm start` (or detected dev command) in the background.
+3. Wait for Vite to be ready.
+4. Navigate Chrome DevTools to the dev server URL.
+5. Take a screenshot, then screenshot `/erd` on the same port.
+6. Check the browser console for unhandled-request warnings: these tell you which URL patterns need MSW handlers next.
 
 ## Step 13: Report
 
@@ -234,6 +235,7 @@ Report to the user:
 - MSW handlers scaffolded for N resource types: {list}
 - Inventory of every URL pattern: `.mockify/resource-inventory.json`
 - First screenshot of the running app
+- The ERD URL (`/erd`), its `[erd]` summary, and the link questions waiting on the user
 - **Console warnings** (if any) listing unhandled requests — these are the next handlers to flesh out
 - Ready for iterative design prompts to fill in mock data
 

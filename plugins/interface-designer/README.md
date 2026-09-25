@@ -74,6 +74,33 @@ Supporting assets:
 2. **Build:** Describe what you want in natural language — pages, forms, tables, dashboards — and it builds them iteratively
 3. **Verify:** Every change is verified with `pnpm build` and Chrome DevTools screenshots before being shown to you
 4. **Track:** Every prompt and change is logged in `CHANGELOG.md` and git-committed, so you can resume or revert at any point
+5. **Diagram:** Every mock serves a live entity relationship diagram at `/erd`, generated from its TypeScript types, so you can always see the data model the screens are building on
+
+## Live ERD
+
+Open `http://localhost:{port}/erd` on any running mock (Vite prints it as the `ERD:` line under `Local`). The diagram comes from the entity types in `src/types/`, read with the project's own TypeScript compiler, so it cannot drift from the code:
+
+- Change an entity type and any open diagram redraws within a second. New and changed entities flash, and a toast says what moved.
+- `ERD.md` in the mock is rewritten at the same time as a Mermaid `erDiagram`, so every commit's diff shows how the data model changed. Paste it into Confluence or GitHub as is.
+- `pnpm build` prints `[erd] N entities, M relationships` and a warning for every id field it could not link, and writes a self-contained copy of the diagram to `dist/erd/index.html` that opens straight from disk.
+
+In the viewer: drag boxes to arrange them (positions are remembered per browser), scroll to pan, Ctrl or ⌘ + scroll to zoom, `/` to search entities and fields, click an entity for its fields and relationships, **Keys only** for big models, **Copy Mermaid** and **Download SVG** to take it elsewhere.
+
+How the diagram reads the types:
+
+| In `src/types/` | On the diagram |
+|---|---|
+| Exported type with an `id` field | Entity |
+| `listingId: string`, `payeeEmployeeId`, `neighborhoodCode` | Reference to `Listing`, `Employee`, `Neighborhood` (by its `code`) |
+| `listingIds: string[]` | Many to many |
+| `bedrooms: BedroomSpec[]` (a named type) | Embedded type on a dashed line |
+| `/** @ref User */ ownerId` | Reference the name could not express |
+| `/** @ref Loss \| Lead */ parentId` | Polymorphic reference |
+| `/** @external PayPal */ paypalOrderId` | Id in an outside system, badged `EXT` |
+| `/** @entity */` on a type without `id` | Entity keyed by `code`, `key` or `slug` (or `/** @entity field */`) |
+| `/** @notEntity */`, or a `Pick`/`Omit` projection | Left off |
+
+Mocks created before 1.6.0 get the ERD the next time you run `/interface-designer:resume` on them; `adopt` and `mockify` install it too. It is a Vite plugin (`erd/vite-plugin-erd.ts`, registered in `vite.config.ts`) with no dependencies beyond the project's own `typescript`, which must still be a 6.x-or-earlier release that exposes the compiler API. Options: `erd({ include, path, output, emit })` for the type folders, the URL, the markdown file (`false` to skip it) and the build copy.
 
 ## Tech Stack
 
@@ -145,6 +172,8 @@ If the file doesn't exist or has no entry for the project, everything works in l
 ```
 design/{project-name}/
 ├── CHANGELOG.md              # Conversation history
+├── ERD.md                    # Mermaid ERD, rewritten on every model change; never edit
+├── erd/                      # Live ERD Vite plugin and viewer (served at /erd); plugin-owned
 ├── index.html                # Loads src/entry.ts
 ├── src/
 │   ├── entry.ts              # Temporal polyfill + zod config, then main
@@ -155,7 +184,7 @@ design/{project-name}/
 │   ├── routes/index.tsx      # /
 │   ├── routes/**/-components # Route-private components
 │   ├── theme/theme.ts        # MUI theme
-│   ├── types/index.ts        # Shared TypeScript types
+│   ├── types/*.ts            # Entity types (what the ERD reads)
 │   ├── schemas/*.ts          # Zod validation schemas (zod-config.ts installs the error map)
 │   ├── services/*.ts         # Mock data services
 │   ├── components/*.tsx      # Reusable components

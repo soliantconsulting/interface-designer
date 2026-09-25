@@ -3,7 +3,7 @@ name: interface-designer
 description: >
   React interface designer agent. Scaffolds new projects from the CNA template,
   builds pages/components iteratively based on user prompts, verifies with Chrome DevTools,
-  and maintains a changelog as conversation history.
+  maintains a changelog as conversation history, and keeps the live ERD at /erd accurate.
 ---
 
 # Interface Designer Agent
@@ -81,12 +81,14 @@ Every project follows this structure:
 ```
 design/{project-name}/
 ├── package.json
-├── vite.config.ts        <- router plugin + optimizeDeps.include (never an exclude)
+├── vite.config.ts        <- router plugin, erd() plugin, optimizeDeps.include (never an exclude)
 ├── tsconfig.json / tsconfig.app.json / tsconfig.node.json
 ├── .oxlintrc.json
 ├── index.html            <- loads /src/entry.ts
 ├── .gitignore
 ├── CHANGELOG.md          <- conversation history
+├── ERD.md                <- written by the ERD plugin on every model change; commit it, never edit it
+├── erd/                  <- ERD Vite plugin and viewer; plugin-owned, refreshed by /interface-designer:resume
 ├── src/
 │   ├── entry.ts          <- polyfill + zod config first, then main
 │   ├── temporal-polyfill.ts
@@ -103,7 +105,7 @@ design/{project-name}/
 │   ├── theme/
 │   │   └── theme.ts      <- MUI theme configuration
 │   ├── types/
-│   │   └── index.ts       <- shared TypeScript types/interfaces
+│   │   └── *.ts           <- entity types; the only place the ERD reads
 │   ├── schemas/
 │   │   ├── zod-config.ts  <- global "Required" error map, installed by entry.ts
 │   │   └── *.ts           <- Zod validation schemas
@@ -178,10 +180,12 @@ const mutation = useMutation({
 
 ### Mock Data Service Pattern
 ```tsx
+// types/item.ts: entity types live in src/types/, where the ERD reads them
+export type Item = { id: string; name: string; createdAt: Temporal.Instant };
+
 // services/mockDataService.ts
 import { v4 as uuidv4 } from 'uuid';
-
-interface Item { id: string; name: string; createdAt: Temporal.Instant; }
+import type { Item } from '../types/item.js';
 
 class MockDataService {
   private items: Item[] = [/* seed data */];
@@ -208,6 +212,29 @@ class MockDataService {
 }
 export const mockDataService = new MockDataService();
 ```
+
+### Entity Relationship Diagram (ERD)
+
+Every mock serves a live ERD of its data model at `/erd` on its own dev server (Vite prints the URL under `Local`). The `erd()` plugin registered in `vite.config.ts` reads the entity types in `src/types/` with the TypeScript compiler, redraws any open diagram within a second of a change, and rewrites `ERD.md` as a Mermaid `erDiagram`. Nobody maintains the diagram by hand. Keeping it right means keeping the types right, so these rules apply to every entity you add or change:
+
+- **Entities live in `src/types/`.** An entity is an exported `type` there with an `id` field. A lookup table keyed by something else takes `/** @entity */`, or `/** @entity code */` to name its key. Types declared anywhere else never reach the diagram.
+- **Name references after their target.** `listingId: string` links to `Listing`, and `listingIds: string[]` is many to many. A role prefix still resolves (`payeeEmployeeId` links to `Employee`), and `neighborhoodCode` or `slotKey` link to types keyed by `code` or `key`.
+- **Tag what a name cannot say.** `/** @ref User */ ownerId: string;` for a role name, `/** @ref Category */ parentId` for a self-reference, `/** @ref Loss | Lead */ parentId` for a polymorphic id.
+- **Tag ids that belong to another system.** `/** @external PayPal */ paypalOrderId: string;` shows the integration on the diagram and marks the field as deliberately unlinked.
+- **Nested records are named types.** `bedrooms: BedroomSpec[]` draws `BedroomSpec` as an embedded type on a dashed line; an inline object literal draws nothing. A value type nested in three or more records (an address, a provenance stamp) is drawn once with no lines, so it does not bury the real relationships.
+- **Projections are not entities.** Derive list rows and summaries with `Pick` or `Omit`, which the ERD skips, or tag a DTO that happens to carry an `id` with `/** @notEntity */`.
+
+`pnpm build` prints `[erd] N entities, M relationships` plus one `[plugin erd]` warning per field it could not link. Clear every warning before committing, because each one is a relationship the diagram cannot draw yet: rename the field, add `@ref`, or add `@external`. When the right target is ambiguous (an `ownerId` that could be `User` or `HomeownerProfile`), ask the user instead of guessing, since a wrong `@ref` puts a false relationship on the diagram. Commit `ERD.md` with the change that moved it, and never edit `ERD.md` or anything in `erd/` by hand.
+
+#### Installing or refreshing the ERD in an existing mock
+
+`/interface-designer:new` ships the ERD. `adopt`, `resume` and `mockify` run this procedure instead:
+
+1. The ERD is a Vite plugin. If the project has no `vite.config.*`, skip the ERD and tell the user why.
+2. Compare `erd/` with the template: `diff -rq ${CLAUDE_PLUGIN_ROOT}/templates/erd erd`. If `erd/` is missing or differs, replace it: `rm -rf erd && cp -R ${CLAUDE_PLUGIN_ROOT}/templates/erd erd`. The folder is plugin-owned and never customized per mock.
+3. If `vite.config.*` does not register the plugin yet, add `import { erd } from "./erd/vite-plugin-erd.js";` and append `erd()` to `plugins`. When the entity types live somewhere other than `src/types/`, point the plugin at them: `erd({ include: ["src/queries"] })` for a mockified JSON:API app (resource types such as `ReturnType<typeof deserializeOne>["data"]`), `erd({ include: ["src/mocks/data"] })` for MSW data modules.
+4. Run the build (`pnpm build`, or `pnpm exec vite build` when the project's own typecheck already fails for unrelated reasons) and read the `[erd]` line. Zero entities means the include path is wrong. Then clear the warnings as described above, asking the user about the ambiguous ones.
+5. Open `/erd`, screenshot it, and commit `erd/`, the config change, `ERD.md` and any tags: `chore: add live ERD at /erd`, or `chore: update ERD viewer` when only the template changed.
 
 ### MUI Grid Layout
 ```tsx
@@ -255,6 +282,7 @@ Maintain `CHANGELOG.md` in the project root. This is the conversation history th
 **Changes:**
 - {what was added/modified/removed}
 - {files created or changed}
+- Data model: {entities and relationships added, changed or removed, when `src/types/` moved}
 
 **Commit:** {short commit hash if committed}
 
@@ -275,10 +303,11 @@ Maintain `CHANGELOG.md` in the project root. This is the conversation history th
 After each set of changes:
 
 1. **Build check:** Run `pnpm build` to verify no TypeScript or build errors
-2. **Visual check:** Use Chrome DevTools to take a screenshot of the affected page(s)
-3. **Console check:** Check for console errors via `list_console_messages`
-4. If issues are found, fix them before reporting to the user
-5. Show the user a screenshot of the result
+2. **ERD check:** Read the `[erd]` line in the build output and clear every `[plugin erd]` warning. When the prompt touched `src/types/`, confirm the entity counts moved the way you expected
+3. **Visual check:** Use Chrome DevTools to take a screenshot of the affected page(s), plus `/erd` when the data model changed
+4. **Console check:** Check for console errors via `list_console_messages`
+5. If issues are found, fix them before reporting to the user
+6. Show the user a screenshot of the result
 
 ---
 
@@ -286,7 +315,8 @@ After each set of changes:
 
 - **Never install additional packages** unless the user explicitly asks. The template has everything needed.
 - **Always use mock data services** — never hardcode data in components. Seed realistic sample data.
-- **Every entity gets a type, a schema, and a service** — follow the types/schemas/services separation.
+- **Every entity gets a type, a schema, and a service:** follow the types/schemas/services separation. The type goes in `src/types/`, which is what the ERD reads.
+- **Keep the ERD truthful:** references named or tagged per the ERD section, zero `[plugin erd]` warnings at commit, and `ERD.md` committed with the change that moved it.
 - **Commit after each prompt cycle** — the user needs to be able to revert to any point.
 - **Keep the CHANGELOG up to date** — this is the user's conversation history.
 - **Verify visually** — don't just write code, confirm it renders correctly.

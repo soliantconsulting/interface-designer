@@ -102,6 +102,7 @@ Rules:
 - **Make navigation work** between the screens you built. A pitch demo that cannot be clicked through is a slide deck.
 - Non-functional controls should look enabled, not disabled. They just do nothing on click, or show the tour.
 - Put every screen on the same window chrome so the app looks like one system.
+- Declare the replica's records as named types in `src/types/`, as in any mock. The ERD at `/erd` then maps the client's current data model, which feeds the data readiness discussion. It is a team reference, not part of the pitch.
 
 Add `data-ai="..."` attributes to every element an AI opportunity will point at. Name them for what they are, not for the opportunity: `data-ai="order-report-grid"`, not `data-ai="opportunity-3"`.
 
