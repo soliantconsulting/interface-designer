@@ -53,10 +53,14 @@ type FieldInfo = Location & {
     refTag: string | null;
 };
 
+type Acceptance = (candidate: Candidate) => boolean;
+
 type Unlinked = {
     owner: Candidate;
     info: FieldInfo;
     prefix: string;
+    accepts: Acceptance;
+    required: boolean;
 };
 
 type Declared = {
@@ -93,6 +97,9 @@ const NATURAL_KEYS = ["id", "code", "key", "slug", "uuid"];
 const REFERENCE_NAME = /^(.+?)(Ids?|IDs?|_ids?)$/;
 const KEY_NAME = /^(.+?)(Codes?|Keys?|_codes?|_keys?)$/;
 const REF_TARGET = /^([A-Za-z_$][\w$]*)(?:\.([A-Za-z_$][\w$]*))?/;
+
+/** The prefix JSON:API clients give a list-row type (`ListDevice`) that names the resource. */
+const LIST_ROW = /^List(?=[A-Z])/;
 
 /**
  * Types embedded in this many different records are shared value types (a provenance stamp, an
@@ -486,7 +493,7 @@ const analyze = (
         const candidate: Candidate = {
             ...location,
             name,
-            words: splitWords(name),
+            words: splitWords(name.replace(LIST_ROW, "")),
             symbol,
             declaration: statement,
             properties,
@@ -524,9 +531,20 @@ const analyze = (
 
         const referenced = rootName(declaration.type);
 
-        return (
-            referenced !== null && (PROJECTION_TYPES.has(referenced) || candidates.has(referenced))
-        );
+        if (
+            referenced === null ||
+            !(PROJECTION_TYPES.has(referenced) || candidates.has(referenced))
+        ) {
+            return false;
+        }
+
+        if (!ts.isIndexedAccessTypeNode(declaration.type)) {
+            return true;
+        }
+
+        const resource = declaration.name.text.replace(LIST_ROW, "");
+
+        return resource === declaration.name.text || candidates.has(resource);
     };
 
     const isEntity = (candidate: Candidate): boolean =>
@@ -613,13 +631,13 @@ const analyze = (
         return fields;
     };
 
-    const resolveName = (
-        prefix: string,
-        accepts: (candidate: Candidate) => boolean,
-    ): Candidate | null => {
+    const resolveName = (prefix: string, accepts: Acceptance): Candidate | null => {
         const words = splitWords(prefix);
-        const eligible = [...candidates.values()].filter(accepts);
-        const byKey = new Map(eligible.map((candidate) => [candidate.words.join(""), candidate]));
+        const byKey = new Map(
+            [...candidates.values()]
+                .filter(accepts)
+                .map((candidate) => [candidate.words.join(""), candidate]),
+        );
 
         for (let start = 0; start < words.length; start += 1) {
             const tail = words.slice(start);
@@ -634,7 +652,20 @@ const analyze = (
             }
         }
 
-        const endings = eligible.filter((candidate) => endsWithWords(candidate.words, words));
+        return null;
+    };
+
+    /**
+     * Finds the one type whose name ends with the prefix's words (`slot` for `PhotoSlot`).
+     *
+     * Only ever a suggestion, never a line: the longer name is as often a different record
+     * (a `box` holding a catalog box reads as `ProjectBox`), and a wrong line is worse than none.
+     */
+    const suggestName = (prefix: string, accepts: Acceptance): Candidate | null => {
+        const words = splitWords(prefix);
+        const endings = [...candidates.values()].filter(
+            (candidate) => accepts(candidate) && endsWithWords(candidate.words, words),
+        );
 
         return endings.length === 1 ? (endings[0] ?? null) : null;
     };
@@ -766,7 +797,13 @@ const analyze = (
 
             if (reference !== undefined) {
                 if (!linkByName(owner, info, reference)) {
-                    unlinked.push({ owner, info, prefix: reference });
+                    unlinked.push({
+                        owner,
+                        info,
+                        prefix: reference,
+                        accepts: isEntity,
+                        required: true,
+                    });
                 }
 
                 continue;
@@ -776,15 +813,15 @@ const analyze = (
 
             if (keyed?.[1] !== undefined && keyed[2] !== undefined) {
                 const keyField = singularize(keyed[2].replace("_", "").toLowerCase());
-                const target = resolveName(
-                    keyed[1],
-                    (candidate) =>
-                        hasProperty(candidate, keyField) &&
-                        !candidate.tags.has("notEntity") &&
-                        !isProjection(candidate.declaration),
-                );
+                const accepts = (candidate: Candidate): boolean =>
+                    hasProperty(candidate, keyField) &&
+                    !candidate.tags.has("notEntity") &&
+                    !isProjection(candidate.declaration);
+                const target = resolveName(keyed[1], accepts);
 
-                if (target !== null) {
+                if (target === null) {
+                    unlinked.push({ owner, info, prefix: keyed[1], accepts, required: false });
+                } else {
                     promote(target, keyField);
                     addRelation(owner, info, target, keyField, "name", false);
                 }
@@ -799,7 +836,9 @@ const analyze = (
         }
     }
 
-    unlinked = unlinked.filter(({ owner, info, prefix }) => !linkByName(owner, info, prefix));
+    unlinked = unlinked.filter(
+        ({ owner, info, prefix, required }) => !required || !linkByName(owner, info, prefix),
+    );
 
     for (const candidate of embeddedBy.keys()) {
         if (
@@ -824,10 +863,21 @@ const analyze = (
         }
     }
 
-    for (const { owner, info, prefix } of unlinked) {
+    for (const { owner, info, prefix, accepts, required } of unlinked) {
+        const suggested = suggestName(prefix, accepts);
+
+        if (suggested === null && !required) {
+            continue;
+        }
+
+        const field = `${owner.name}.${info.name}`;
+
         issues.push({
             level: "warning",
-            message: `${owner.name}.${info.name} looks like a reference, but no entity matches "${prefix}". Tag it /** @ref Entity */, or /** @external System */ if it points outside the mock.`,
+            message:
+                suggested === null
+                    ? `${field} looks like a reference, but no entity matches "${prefix}". Tag it /** @ref Entity */, /** @external System */ for an id outside the mock, or /** @ref none */ for an id with no single target.`
+                    : `${field} may point at ${suggested.name}, but only part of the name matches, so no line is drawn. Confirm with /** @ref ${suggested.name} */, or tag the real target, /** @external System */ or /** @ref none */.`,
             entity: owner.name,
             field: info.name,
             file: info.file,

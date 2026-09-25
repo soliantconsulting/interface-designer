@@ -87,7 +87,7 @@
                     <summary>How this diagram is built</summary>
                     <p>It is generated from the TypeScript types in <code id="sources"></code> and redraws whenever they change.</p>
                     <p>An entity is an exported type with an <code>id</code> field, or one tagged <code>/** @entity */</code>. Types without an id that sit inside a record are drawn as embedded types.</p>
-                    <p>A field named after an entity (<code>listingId</code>, <code>listingIds</code>) links to it. Anything else takes a tag: <code>/** @ref User */</code>, or <code>/** @external PayPal */</code> for an id that lives outside the mock.</p>
+                    <p>A field named after an entity (<code>listingId</code>, <code>listingIds</code>) links to it. Anything else takes a tag: <code>/** @ref User */</code>, <code>/** @external PayPal */</code> for an id that lives outside the mock, or <code>/** @ref none */</code> for an id with no single target.</p>
                 </details>
             </aside>
             <div class="canvas" id="canvas">

@@ -97,8 +97,11 @@ How the diagram reads the types:
 | `/** @ref User */ ownerId` | Reference the name could not express |
 | `/** @ref Loss \| Lead */ parentId` | Polymorphic reference |
 | `/** @external PayPal */ paypalOrderId` | Id in an outside system, badged `EXT` |
+| `/** @ref none */ entityId` | An id with no single target, left unlinked on purpose |
+| `slotKey` when the type is `PhotoSlot` (only part of the name) | No line; the build suggests `PhotoSlot` for you to confirm with `@ref` |
 | `/** @entity */` on a type without `id` | Entity keyed by `code`, `key` or `slug` (or `/** @entity field */`) |
-| `/** @notEntity */`, or a `Pick`/`Omit` projection | Left off |
+| `ListFinanceProfile` with no `FinanceProfile` type | Entity (a JSON:API list row that is the resource's only type) |
+| `/** @notEntity */`, a `Pick`/`Omit` projection, or `ListDevice` next to a full `Device` | Left off |
 
 Mocks created before 1.6.0 get the ERD the next time you run `/interface-designer:resume` on them; `adopt` and `mockify` install it too. It is a Vite plugin (`erd/vite-plugin-erd.ts`, registered in `vite.config.ts`) with no dependencies beyond the project's own `typescript`, which must still be a 6.x-or-earlier release that exposes the compiler API. Options: `erd({ include, path, output, emit })` for the type folders, the URL, the markdown file (`false` to skip it) and the build copy.
 
